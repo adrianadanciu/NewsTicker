@@ -13,7 +13,7 @@ def get_live_price(ticker):
         price = ticker_data.fast_info.get("last_price")
         if price:
             return price
-        # Fallback for tickers where fast_info doesn't populate last_price
+        #fallback for tickers where fast_info doesn't populate last_price
         history = ticker_data.history(period="1d", interval="1m")
         if not history.empty:
             return history['Close'].iloc[-1]

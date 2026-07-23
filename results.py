@@ -4,7 +4,7 @@ import yfinance as yf
 import plotly.graph_objects as go
 import data
 import ai
-import trading
+import price
 import engine
 #the app has a search memory of 10 minutes
 @st.cache_data(ttl=600, show_spinner=False)
@@ -56,7 +56,7 @@ def run_analysis_pipeline(target_company, option, user_plan, user_usage, config,
         return
     with st.spinner(""):
         pos, neg, neut, dilution, growth, enriched_headlines = ai.analyze_headlines(all_headlines)
-    current_price = trading.get_live_price(target_company)
+    current_price = price.get_live_price(target_company)
     st.session_state.all_headlines = enriched_headlines
     st.session_state.current_price = current_price
     st.session_state.ai_stats = (pos, neg, neut, dilution, growth)

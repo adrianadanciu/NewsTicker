@@ -3,7 +3,7 @@ import base64
 import theme
 import auth
 import sidebar
-import dashboard
+import results
 #page configuration
 st.set_page_config(page_title="NewsTicker", layout="wide")
 theme.inject_custom_ui()
@@ -54,7 +54,7 @@ elif st.session_state["authentication_status"]:
     user_plan = user_data.get('plan', 'Free')
     upgrade_requested = user_data.get('upgrade_requested', False)
     user_usage = auth.reset_daily_usage_if_needed(config, current_username)
-    dashboard.restore_last_analysis(user_data)
+    results.restore_last_analysis(user_data)
     user_name = st.session_state.get('name', 'User')
     sidebar.render_profile_card(user_plan, upgrade_requested, user_name)
     if st.query_params.get("trigger_upgrade") == "1":
@@ -96,13 +96,13 @@ elif st.session_state["authentication_status"]:
             if not target_company:
                 st.warning("Please enter a valid ticker first.")
             else:
-                dashboard.run_analysis_pipeline(
+                results.run_analysis_pipeline(
                     target_company, option, user_plan, user_usage, config, current_username, auth.save_config
                 )
         if not st.session_state.analysis_done:
-            dashboard.render_intro_card(target_company, option, user_plan)
+            results.render_intro_card(target_company, option, user_plan)
         else:
-            dashboard.render_dashboard(target_company, option, user_plan, confidence_threshold)
+            results.render_dashboard(target_company, option, user_plan, confidence_threshold)
 elif st.session_state["authentication_status"] is False:
     st.error('Username or password incorrect.')
 elif st.session_state["authentication_status"] is None:
