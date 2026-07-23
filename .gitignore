@@ -1,0 +1,15 @@
+# User data / secrets — never commit this
+config.yaml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
