@@ -51,7 +51,7 @@ def fetch_google_news(ticker):
     search_query = f'"{clean_ticker}" OR "{clean_ticker} {local_term}"'
     url = f"https://news.google.com/rss/search?q={search_query}&hl={hl}&gl={gl}&ceid={ceid}"
     urls = [url]
-    #extended history lookback
+    #extended history lookback, since Google News favors very recent articles by default
     lookback_date = (datetime.utcnow() - timedelta(days=365)).strftime("%Y-%m-%d")
     extended_query = f'{search_query} after:{lookback_date}'
     extended_url = f"https://news.google.com/rss/search?q={extended_query}&hl={hl}&gl={gl}&ceid={ceid}"
@@ -84,7 +84,7 @@ def fetch_google_news(ticker):
                         if title_text.lower() in seen_titles: #eliminates the duplicates
                             continue
                         seen_titles.add(title_text.lower())
-                        article_link = item.link.text if item.link else "https://news.google.com" #creates a fallback in case the link doesn t exist
+                        article_link = item.link.text if item.link else "https://news.google.com" #creates a fallback in case the link doesn't exist
                         detected_source = item.source.text if item.source else "Financial Press"
                         #showing a more beautiful showcase for important american news
                         if suffix == "US":
@@ -132,5 +132,5 @@ def fetch_reddit_wsb(ticker):
                         "link": article_link
                     })
     except Exception:
-        pass #as it s not our main source of data, we don t need log noise
+        pass #as it's not our main source of data, we don't need log noise
     return headlines

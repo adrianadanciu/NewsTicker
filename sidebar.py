@@ -24,6 +24,7 @@ def resolve_ticker(user_input: str) -> str:
     return COMPANY_NAME_TO_TICKER.get(key, user_input)
 #display of the profile
 def render_profile_card(user_plan, upgrade_requested, user_name):
+    #NOTE: this is a MOCK checkout. No real payment processing happens here. Submitting the "proof of payment" form below upgrades the account to Premium immediately, with no verification. Swap in a real payment provider (Stripe, etc.) before using this in production.
     first_letter = user_name[0].upper() if user_name else "U"
     if user_plan == "Premium":
         glow_color = "#f39c12"
@@ -64,6 +65,7 @@ def render_profile_card(user_plan, upgrade_requested, user_name):
     st.sidebar.html(profile_menu_html)
 #checkout page
 def render_upgrade_page(config, current_username, save_config):
+    """Renders the sidebar's configuration panel."""
     st.title("Unlock Premium Plan")
     st.markdown("### Take your portfolio and market analysis to a professional level")
     st.write("---")

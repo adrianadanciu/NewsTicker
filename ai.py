@@ -21,6 +21,7 @@ def analyze_headlines(headlines):
     for item in headlines:
         text_upper = item["text"].upper()
         source = item["source"]
+        #these keyword lists override FinBERT's classification below (see tech_sentiment_boost)
         tech_positive_catalysts = [
             "BENCHMARK BEAT", "NEW CHIP", "REVOLUTIONARY", "UPDATE RELEASED", "PATCHED", 
             "OPEN SOURCE", "AI MODELS", "PERFORMANCE LEAP", "PARTNERSHIP", "BREAKTHROUGH"

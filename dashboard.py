@@ -17,6 +17,7 @@ def cached_fetch_price_history(ticker, period, interval="1d"):
     except Exception:
         return None
 def _flatten_ohlc(df):
+    #yfinance sometimes returns a MultiIndex for the columns, this collapses it back down
     if isinstance(df.columns, pd.MultiIndex):
         df = df.copy()
         df.columns = df.columns.get_level_values(0)
@@ -73,6 +74,7 @@ def run_analysis_pipeline(target_company, option, user_plan, user_usage, config,
         user_usage['count'] += 1
         config['credentials']['usernames'][current_username]['usage'] = user_usage
     save_config(config)
+    #only Free needs an immediate rerun here, so the "X out of 3 analyses left" banner updates right away; Premium has no counter to refresh.
     if user_plan == "Free":
         st.rerun()
 def render_intro_card(target_company, option, user_plan):
@@ -170,6 +172,7 @@ def render_price_chart(target_company):
             margin=dict(l=10, r=10, t=10, b=10),
             height=380,
             font=dict(color="#cbd5e1"),
+            # type="category" plots bars back-to-back in sequence instead of on a real calendar time axis, so nights/weekends with no trading don't show up as big empty gaps that squeeze the actual candles into a tiny cluster.
             xaxis=dict(showgrid=False, rangeslider=dict(visible=False), type="category", nticks=10),
             yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.06)"),
         )

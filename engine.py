@@ -27,12 +27,14 @@ CURRENCY_BY_SUFFIX = {
 }
 DEFAULT_CURRENCY = ("USD", "$")#US market is the system default
 def get_currency(target_company):
+    """Maps the ticker's suffix to its currency code and symbol."""
     if "." in target_company:
         suffix = target_company.split(".")[-1].upper()
         if suffix in CURRENCY_BY_SUFFIX:
             return CURRENCY_BY_SUFFIX[suffix]
     return DEFAULT_CURRENCY
 def format_price(value, target_company):
+    """Formats a price with its symbol in front if the currency has one, otherwise with the currency code after."""
     code, symbol = get_currency(target_company)
     if symbol:
         return f"{symbol}{value:.2f}"
@@ -56,7 +58,7 @@ def compute_technical_trend(price_history):
         tech_note = "Chart trend: not enough price history to confirm a trend."
     return technical_bullish, tech_note
 def compute_atr_percent(price_history, period=14):
-    """Calculates the volatility of an action per day."""
+    """Calculates the volatility of an action per day, using True Range instead of a simple High-Low."""
     if price_history is None or len(price_history) < period + 1:
         return None
     if isinstance(price_history.columns, pd.MultiIndex):
@@ -79,7 +81,7 @@ def compute_atr_percent(price_history, period=14):
         return None
     return (atr / current) * 100
 def _pullback_fraction(atr_pct):
-    """Verifies the existence of the volatility average"""
+    """Turns the daily ATR into the entry-pullback fraction used below."""
     if atr_pct is None:
         return 0.075 #safety net
     return atr_pct / 100
@@ -104,6 +106,7 @@ def compute_sentiment_stats(pos, neg, neut):
     sample_note = f"Based on {directional_opinions} directional headline(s) out of {total_analyzed} analyzed."
     return directional_opinions, have_enough_sample, bullish_pct_value, sample_note, min_required
 def build_buy_recommendation(dilution, growth, have_enough_sample, bullish_pct_value, confidence_threshold, technical_bullish, tech_note, sample_note, current_price, target_company, atr_pct=None):
+    """Decides the BUY card, branches checked in priority order: dilution risk, trend conflict, buy signal, watch, neutral."""
     sentiment_bullish = growth or (bullish_pct_value is not None and bullish_pct_value >= confidence_threshold)
     warning = "" if have_enough_sample else f"<br><br>⚠ <i>{sample_note} Treat this signal with extra caution.</i>"
     if dilution:
@@ -155,6 +158,7 @@ def build_buy_recommendation(dilution, growth, have_enough_sample, bullish_pct_v
         "text_color": "#f39c12",
     }
 def build_sell_recommendation(is_profitable, dilution, growth, have_enough_sample, bullish_pct, confidence_threshold, technical_bullish, tech_note, sample_note):
+    """Decides the SELL card, branches checked in priority order: dilution exit, technical exit, hold, maintain."""
     warning = "" if have_enough_sample else f"<br><br>⚠ <i>{sample_note} Treat this signal with extra caution.</i>"
     if is_profitable and dilution:
         return {

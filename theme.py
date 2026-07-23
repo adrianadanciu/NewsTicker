@@ -10,7 +10,7 @@ def inject_custom_ui():
         [data-testid="stToolbarActions"] {
             display: none !important;
         }
-        /*hides the streamlit bar*/
+        /*transparent instead of display: none, so the sidebar re-open button inside it still works*/
         header[data-testid="stHeader"] {
             background: transparent !important;
             box-shadow: none !important;
