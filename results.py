@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
+from datetime import datetime
 import data
 import ai
 import price
@@ -32,6 +33,40 @@ def cached_fetch_data(ticker, plan):
         news = data.fetch_google_news(ticker)
         reddit = data.fetch_reddit_wsb(ticker)
         return news + reddit
+def _execute_analysis(target_company, user_plan):
+    """Core analysis step shared by single-ticker runs and watchlist scans:
+    fetches news, runs sentiment analysis, and fetches the live price."""
+    all_headlines = cached_fetch_data(target_company, user_plan)
+    if not all_headlines:
+        return None
+    pos, neg, neut, dilution, growth, enriched_headlines = ai.analyze_headlines(all_headlines)
+    current_price = price.get_live_price(target_company)
+    return {
+        'current_price': current_price,
+        'ai_stats': (pos, neg, neut, dilution, growth),
+        'headlines': enriched_headlines,
+    }
+def _append_history(config, current_username, target_company, option, result):
+    """Appends a lightweight record to the user's analysis history, used by the
+    watchlist leaderboard, capped to the most recent 20 entries."""
+    pos, neg, neut, dilution, growth = result['ai_stats']
+    directional_opinions, have_enough_sample, bullish_pct_value, sample_note, min_required = (
+        engine.compute_sentiment_stats(pos, neg, neut)
+    )
+    currency, _ = engine.get_currency(target_company)
+    current_price = result['current_price']
+    entry = {
+        'ticker': target_company,
+        'option': option,
+        'bullish_pct': bullish_pct_value,
+        'current_price': float(current_price) if current_price is not None else None,
+        'currency': currency,
+        'dilution': dilution,
+        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
+    }
+    history = config['credentials']['usernames'][current_username].get('analysis_history', [])
+    history.append(entry)
+    config['credentials']['usernames'][current_username]['analysis_history'] = history[-20:]
 def restore_last_analysis(user_data):
     """Restores the last saved analysis."""
     if "restored_last_analysis" in st.session_state:
@@ -49,17 +84,16 @@ def restore_last_analysis(user_data):
         st.session_state.analysis_done = True
 def run_analysis_pipeline(target_company, option, user_plan, user_usage, config, current_username, save_config):
     """Fetches news, runs the AI sentiment analysis, fetches the live price and redirects everything to the session state."""
-    with st.spinner(""): #fetches the news
-        all_headlines = cached_fetch_data(target_company, user_plan)
-    if not all_headlines:
+    with st.spinner(""):
+        result = _execute_analysis(target_company, user_plan)
+    if result is None:
         st.error(f"No headlines found for '{target_company}'.")
         return
-    with st.spinner(""):
-        pos, neg, neut, dilution, growth, enriched_headlines = ai.analyze_headlines(all_headlines)
-    current_price = price.get_live_price(target_company)
-    st.session_state.all_headlines = enriched_headlines
+    pos, neg, neut, dilution, growth = result['ai_stats']
+    current_price = result['current_price']
+    st.session_state.all_headlines = result['headlines']
     st.session_state.current_price = current_price
-    st.session_state.ai_stats = (pos, neg, neut, dilution, growth)
+    st.session_state.ai_stats = result['ai_stats']
     st.session_state.active_ticker = target_company
     st.session_state.analysis_done = True
     config['credentials']['usernames'][current_username]['last_ticker'] = target_company
@@ -68,8 +102,9 @@ def run_analysis_pipeline(target_company, option, user_plan, user_usage, config,
         'option': option,
         'current_price': float(current_price) if current_price is not None else None,
         'ai_stats': [pos, neg, neut, dilution, growth],
-        'headlines': enriched_headlines,
+        'headlines': result['headlines'],
     }
+    _append_history(config, current_username, target_company, option, result)
     if user_plan == "Free":
         user_usage['count'] += 1
         config['credentials']['usernames'][current_username]['usage'] = user_usage
@@ -77,6 +112,42 @@ def run_analysis_pipeline(target_company, option, user_plan, user_usage, config,
     #only Free needs an immediate rerun here, so the "X out of 3 analyses left" banner updates right away; Premium has no counter to refresh.
     if user_plan == "Free":
         st.rerun()
+def scan_watchlist(user_plan, user_usage, config, current_username, save_config):
+    """Runs the full analysis on every ticker in the user's watchlist, stopping
+    early if the Free plan's daily limit is hit, and returns the results sorted
+    by signal strength (highest bullish % first)."""
+    watchlist = config['credentials']['usernames'][current_username].get('watchlist', [])
+    scan_results = []
+    progress = st.empty()
+    for i, ticker in enumerate(watchlist):
+        if user_plan == "Free" and user_usage['count'] >= 3:
+            st.warning(f"Daily limit reached. Stopped after {len(scan_results)} of {len(watchlist)} tickers.")
+            break
+        progress.write(f"Scanning {i + 1}/{len(watchlist)}: {ticker}")
+        with st.spinner(""):
+            result = _execute_analysis(ticker, user_plan)
+        if result is None:
+            continue
+        pos, neg, neut, dilution, growth = result['ai_stats']
+        directional_opinions, have_enough_sample, bullish_pct_value, sample_note, min_required = (
+            engine.compute_sentiment_stats(pos, neg, neut)
+        )
+        currency, _ = engine.get_currency(ticker)
+        scan_results.append({
+            'ticker': ticker,
+            'bullish_pct': bullish_pct_value,
+            'current_price': result['current_price'],
+            'currency': currency,
+            'dilution': dilution,
+        })
+        _append_history(config, current_username, ticker, "BUY", result)
+        if user_plan == "Free":
+            user_usage['count'] += 1
+            config['credentials']['usernames'][current_username]['usage'] = user_usage
+    progress.empty()
+    save_config(config)
+    scan_results.sort(key=lambda r: r['bullish_pct'] if r['bullish_pct'] is not None else -1, reverse=True)
+    return scan_results
 def render_intro_card(target_company, option, user_plan):
     st.markdown(f"""
     <div class="premium-card" style="border-left: 4px solid #00f2fe; margin-top: 15px; margin-bottom: 25px;">
@@ -107,6 +178,64 @@ def _render_sell_card(rec):
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
+def _render_signal_row(ticker, bullish_pct, current_price, currency, dilution=False, suffix=""):
+    """Renders one ticker as a compact signal card, used by both the watchlist
+    scan results and the recent-analyses leaderboard."""
+    if dilution:
+        border_color = "#ff4b4b"
+    elif bullish_pct is not None and bullish_pct >= 60:
+        border_color = "#39ff6a"
+    elif bullish_pct is not None and bullish_pct <= 40:
+        border_color = "#ff4b4b"
+    else:
+        border_color = "#8a90a6"
+    pct_label = f"{bullish_pct:.1f}% Bullish" if bullish_pct is not None else "No directional data"
+    price_label = f"{current_price:.2f} {currency}" if current_price else "Price offline"
+    html = f"""
+    <div class="premium-card" style="border-left: 4px solid {border_color}; padding: 14px 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 800; font-size: 1.1rem; color: #f1f5f9;">{ticker}</span>
+        <span style="color: #cbd5e1; font-size: 0.9rem;">{pct_label} · {price_label}{suffix}</span>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+def render_watchlist_page(config, current_username, save_config, user_plan, user_usage):
+    """Renders the watchlist management page: add/remove tickers, scan them all,
+    and show a leaderboard of past analyses sorted by signal strength."""
+    st.title("My Watchlist")
+    st.write("---")
+    watchlist = config['credentials']['usernames'][current_username].get('watchlist', [])
+    if not watchlist:
+        st.info("Your watchlist is empty. Add tickers from the sidebar while analyzing a stock.")
+    else:
+        for ticker in list(watchlist):
+            col_t, col_r = st.columns([4, 1])
+            col_t.write(f"**{ticker}**")
+            if col_r.button("Remove", key=f"remove_{ticker}"):
+                watchlist.remove(ticker)
+                config['credentials']['usernames'][current_username]['watchlist'] = watchlist
+                save_config(config)
+                st.rerun()
+        st.write("")
+        if st.button("▶ Scan Watchlist", use_container_width=True):
+            st.session_state.watchlist_scan_results = scan_watchlist(
+                user_plan, user_usage, config, current_username, save_config
+            )
+    if st.session_state.get("watchlist_scan_results"):
+        st.write("---")
+        st.subheader("Scan results, sorted by signal strength")
+        for r in st.session_state.watchlist_scan_results:
+            suffix = "  ⚠ dilution risk" if r['dilution'] else ""
+            _render_signal_row(r['ticker'], r['bullish_pct'], r['current_price'], r['currency'], r['dilution'], suffix)
+    history = config['credentials']['usernames'][current_username].get('analysis_history', [])
+    if history:
+        st.write("---")
+        st.subheader("Recent analyses")
+        sorted_history = sorted(
+            history, key=lambda h: h['bullish_pct'] if h.get('bullish_pct') is not None else -1, reverse=True
+        )
+        for h in sorted_history[:10]:
+            suffix = f"  ({h.get('option', 'BUY')} · {h.get('timestamp', '')})"
+            _render_signal_row(h['ticker'], h.get('bullish_pct'), h.get('current_price'), h.get('currency', 'USD'), h.get('dilution', False), suffix)
 TIMEFRAME_CONFIG = {
     "1H": {"interval": "60m", "period": "5d"},
     "4H": {"interval": "60m", "period": "60d", "resample": "4h"},

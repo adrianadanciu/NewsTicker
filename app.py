@@ -43,6 +43,8 @@ if "active_ticker" not in st.session_state:
     st.session_state.active_ticker = ""
 if "checkout_mode" not in st.session_state:
     st.session_state.checkout_mode = False
+if "watchlist_mode" not in st.session_state:
+    st.session_state.watchlist_mode = False
 config = auth.load_config()
 authenticator = auth.get_authenticator(config)
 if not st.session_state.get("authentication_status"):
@@ -61,14 +63,17 @@ elif st.session_state["authentication_status"]:
         st.query_params.clear()
         st.session_state.checkout_mode = True
         st.rerun()
-    if st.session_state.checkout_mode:
+    if st.session_state.checkout_mode or st.session_state.watchlist_mode:
         if st.sidebar.button("← Back to Analysis", use_container_width=True):
             st.session_state.checkout_mode = False
+            st.session_state.watchlist_mode = False
             st.rerun()
     authenticator.logout('Logout', 'sidebar')
     st.sidebar.write("---")
     if st.session_state.checkout_mode and user_plan == "Free":
         sidebar.render_upgrade_page(config, current_username, auth.save_config)
+    elif st.session_state.watchlist_mode:
+        results.render_watchlist_page(config, current_username, auth.save_config, user_plan, user_usage)
     else:
         title_html = """
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
@@ -84,7 +89,9 @@ elif st.session_state["authentication_status"]:
             limit_left = max(0, 3 - user_usage['count'])
             st.warning(f"ℹ️ You are on the **Free** plan. You have **{limit_left} out of 3 daily analyses** left.")
         st.write("---")
-        option, target_company, confidence_threshold, run_analysis = sidebar.render_configuration_panel(user_data)
+        option, target_company, confidence_threshold, run_analysis = sidebar.render_configuration_panel(
+            user_data, config, current_username, auth.save_config
+        )
         if run_analysis:
             if user_plan == "Free":
                 if "." in target_company:

@@ -23,6 +23,10 @@ def load_config():
             user_data['usage'] = {'last_date': '', 'count': 0}
         if 'upgrade_requested' not in user_data:
             user_data['upgrade_requested'] = False
+        if 'watchlist' not in user_data:
+            user_data['watchlist'] = []
+        if 'analysis_history' not in user_data:
+            user_data['analysis_history'] = []
 
     return config
 
@@ -108,6 +112,8 @@ def render_login_page(authenticator, config):
                         'last_date': datetime.now().strftime("%Y-%m-%d"),
                         'count': 0
                     }
+                    config['credentials']['usernames'][username]['watchlist'] = []
+                    config['credentials']['usernames'][username]['analysis_history'] = []
                     st.success('✓ Account created successfully! Switch to the "Login" tab to sign in.')
                     save_config(config)
         except Exception as e:

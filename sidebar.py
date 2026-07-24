@@ -95,7 +95,7 @@ def render_upgrade_page(config, current_username, save_config):
             st.success("✓ Payment confirmed — your account has been upgraded to Premium!")
             st.rerun()
 #sidebar configuration
-def render_configuration_panel(user_data):
+def render_configuration_panel(user_data, config, current_username, save_config):
     """Renders the sidebar's configuration panel."""
     #title
     header_html = """
@@ -138,6 +138,22 @@ def render_configuration_panel(user_data):
     #keeps the last change
     if target_company != st.session_state.active_ticker:
         st.session_state.analysis_done = False
+
+    #watchlist controls
+    watchlist = config['credentials']['usernames'][current_username].get('watchlist', [])
+    if target_company in watchlist:
+        st.sidebar.button("✓ In Watchlist", use_container_width=True, disabled=True)
+    else:
+        if st.sidebar.button("★ Add to Watchlist", use_container_width=True):
+            watchlist.append(target_company)
+            config['credentials']['usernames'][current_username]['watchlist'] = watchlist
+            save_config(config)
+            st.rerun()
+    if st.sidebar.button("My Watchlist", use_container_width=True):
+        st.session_state.watchlist_mode = True
+        st.rerun()
+    st.sidebar.write("---")
+
     run_analysis = st.sidebar.button("▶ Run analysis", use_container_width=True)
     if st.session_state.get("trigger_run"):
         run_analysis = True
