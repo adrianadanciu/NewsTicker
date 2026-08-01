@@ -34,8 +34,7 @@ def cached_fetch_data(ticker, plan):
         reddit = data.fetch_reddit_wsb(ticker)
         return news + reddit
 def _execute_analysis(target_company, user_plan):
-    """Core analysis step shared by single-ticker runs and watchlist scans:
-    fetches news, runs sentiment analysis, and fetches the live price."""
+    """Core analysis step shared by single-ticker runs and watchlist scans: fetches news, runs sentiment analysis, and fetches the live price."""
     all_headlines = cached_fetch_data(target_company, user_plan)
     if not all_headlines:
         return None
@@ -47,8 +46,7 @@ def _execute_analysis(target_company, user_plan):
         'headlines': enriched_headlines,
     }
 def _append_history(config, current_username, target_company, option, result):
-    """Appends a lightweight record to the user's analysis history, used by the
-    watchlist leaderboard, capped to the most recent 20 entries."""
+    """Appends a lightweight record to the user's analysis history, used by the watchlist leaderboard."""
     pos, neg, neut, dilution, growth = result['ai_stats']
     directional_opinions, have_enough_sample, bullish_pct_value, sample_note, min_required = (
         engine.compute_sentiment_stats(pos, neg, neut)
@@ -113,9 +111,7 @@ def run_analysis_pipeline(target_company, option, user_plan, user_usage, config,
     if user_plan == "Free":
         st.rerun()
 def scan_watchlist(user_plan, user_usage, config, current_username, save_config):
-    """Runs the full analysis on every ticker in the user's watchlist, stopping
-    early if the Free plan's daily limit is hit, and returns the results sorted
-    by signal strength (highest bullish % first)."""
+    """Runs the full analysis on every ticker in the user's watchlist, stopping early if the Free plan's daily limit is hit and returns the results sorted by signal strength."""
     watchlist = config['credentials']['usernames'][current_username].get('watchlist', [])
     scan_results = []
     progress = st.empty()
@@ -179,8 +175,7 @@ def _render_sell_card(rec):
     """
     st.markdown(html, unsafe_allow_html=True)
 def _render_signal_row(ticker, bullish_pct, current_price, currency, dilution=False, suffix=""):
-    """Renders one ticker as a compact signal card, used by both the watchlist
-    scan results and the recent-analyses leaderboard."""
+    """Renders one ticker as a compact signal card, used by both the watchlist scan results and the recent analyses leaderboard."""
     if dilution:
         border_color = "#ff4b4b"
     elif bullish_pct is not None and bullish_pct >= 60:
@@ -199,8 +194,7 @@ def _render_signal_row(ticker, bullish_pct, current_price, currency, dilution=Fa
     """
     st.markdown(html, unsafe_allow_html=True)
 def render_watchlist_page(config, current_username, save_config, user_plan, user_usage):
-    """Renders the watchlist management page: add/remove tickers, scan them all,
-    and show a leaderboard of past analyses sorted by signal strength."""
+    """Renders the watchlist management page: add/remove tickers, scan them all and show a leaderboard of past analyses sorted by signal strength."""
     st.title("My Watchlist")
     st.write("---")
     watchlist = config['credentials']['usernames'][current_username].get('watchlist', [])
@@ -272,7 +266,6 @@ def render_price_chart(target_company):
             x_labels = ohlc.index.strftime("%b %d, %H:%M")
         else:
             x_labels = ohlc.index.strftime("%b %d, %Y")
-
         fig = go.Figure()
         fig.add_trace(go.Candlestick(
             x=x_labels,

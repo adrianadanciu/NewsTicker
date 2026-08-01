@@ -10,7 +10,7 @@ def inject_custom_ui():
         [data-testid="stToolbarActions"] {
             display: none !important;
         }
-        /*transparent instead of display: none, so the sidebar re-open button inside it still works*/
+        /*transparent instead of display:none, so the sidebar re-open button inside it still works*/
         header[data-testid="stHeader"] {
             background: transparent !important;
             box-shadow: none !important;
@@ -77,14 +77,32 @@ def inject_custom_ui():
         }
         /*main page organizing*/
         .block-container {
-            padding-top: 1.5rem !important;
+            padding-top: 0.8rem !important;
             padding-bottom: 2rem !important;
         }
         div[data-testid="stMain"] hr {
-            margin: 1rem 0 !important;
+            margin: 0.4rem 0 !important;
+        }
+        div[data-testid="stMain"] div[data-testid="stMarkdownContainer"] p {
+            margin: 0 !important;
         }
         div[data-testid="stSidebarUserContent"] {
-            padding-top: 0.8rem !important;
+            padding-top: 0.3rem !important;
+            overflow: visible !important;
+        }
+        div[data-testid="stSidebar"],
+        div[data-testid="stSidebar"] > div,
+        div[data-testid="stSidebar"] section,
+        div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"],
+        div[data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"],
+        div[data-testid="stSidebar"] div[data-testid="element-container"],
+        div[data-testid="stSidebar"] div[data-testid="stElementContainer"],
+        div[data-testid="stSidebar"] div[data-testid="stHtml"],
+        div[data-testid="stSidebar"] div[data-testid="stMarkdown"],
+        div[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] {
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
         }
         /*compacts the sidebar*/
         div[data-testid="stSidebarHeader"] {
@@ -95,10 +113,32 @@ def inject_custom_ui():
         }
         div[data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"],
         div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] {
-            gap: 0.35rem !important;
+            gap: 0.05rem !important;
+        }
+        div[data-testid="stSidebar"] div[data-testid="element-container"],
+        div[data-testid="stSidebar"] div[data-testid="stElementContainer"] {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        div[data-testid="stSidebar"] div[data-testid="stHtml"],
+        div[data-testid="stSidebar"] div[data-testid="stMarkdown"],
+        div[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] {
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1.1 !important;
+        }
+        div[data-testid="stSidebar"] div.stButton {
+            margin: 0 !important;
+        }
+        div[data-testid="stSidebar"] div.stButton button {
+            padding-top: 0.35rem !important;
+            padding-bottom: 0.35rem !important;
+        }
+        div[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] p {
+            margin: 0 !important;
         }
         div[data-testid="stSidebar"] hr {
-            margin: 0.4rem 0 !important;
+            margin: 0.1rem 0 !important;
         }
         div[data-testid="stSidebar"] .stRadio {
             margin-bottom: -0.6rem !important;
@@ -131,6 +171,7 @@ def inject_custom_ui():
         }
     </style>
     <script>
+    /*autoselects all text in the ticker box on focus, so typing replaces it*/
     if (!window.__tickerFocusSelectBound) {
         window.__tickerFocusSelectBound = true;
         document.addEventListener('focus', function (e) {

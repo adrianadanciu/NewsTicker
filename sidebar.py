@@ -22,8 +22,8 @@ def resolve_ticker(user_input: str) -> str:
     """Maps a recognized company name to its ticker"""
     key = user_input.strip().lower()
     return COMPANY_NAME_TO_TICKER.get(key, user_input)
-#display of the profile
-def render_profile_card(user_plan, upgrade_requested, user_name):
+#builds the avatar and the hover panel as an HTML snippet
+def _build_avatar_html(user_plan, upgrade_requested, user_name):
     #NOTE: this is a MOCK checkout. No real payment processing happens here. Submitting the "proof of payment" form below upgrades the account to Premium immediately, with no verification. Swap in a real payment provider (Stripe, etc.) before using this in production.
     first_letter = user_name[0].upper() if user_name else "U"
     if user_plan == "Premium":
@@ -48,21 +48,49 @@ def render_profile_card(user_plan, upgrade_requested, user_name):
     else:
         action_html = "<div style='font-size: 0.75rem; color: #8a90a6; text-align: center;'>You have full access.</div>"
 
-    profile_menu_html = f"""
-    <div class="profile-container" style="display: flex; align-items: center; gap: 12px; padding-bottom: 10px;">
-        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 46px; height: 46px; flex-shrink: 0;">
-            <div style="position: absolute; width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid {glow_color}; opacity: 0.25; filter: blur(1.5px);"></div>
-            <div style="width: 40px; height: 40px; background: {bg_gradient}; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.3rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1.5px solid {border_accent}; text-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 2;">{first_letter}</div>
-            <div style="position: absolute; bottom: 0px; right: 0px; width: 10px; height: 10px; background-color: {glow_color}; border-radius: 50%; border: 2px solid #0e1117; box-shadow: 0 0 8px {glow_color}; z-index: 3;"></div>
+    return f"""
+    <style>
+        .profile-hover-wrap {{ position: relative; display: inline-block; height: 32px; max-height: 32px; overflow: visible; flex-shrink: 0; }}
+        .profile-hover-panel {{
+            position: absolute;
+            top: -6px;
+            left: 40px;
+            min-width: 190px;
+            background: rgba(10, 25, 55, 0.98);
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 10px;
+            padding: 12px 16px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-6px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            z-index: 99999;
+        }}
+        .profile-hover-wrap:hover .profile-hover-panel {{
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }}
+    </style>
+    <div class="profile-hover-wrap">
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;">
+            <div style="position: absolute; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid {glow_color}; opacity: 0.25; filter: blur(1.5px);"></div>
+            <div style="width: 28px; height: 28px; background: {bg_gradient}; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1.5px solid {border_accent}; text-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 2;">{first_letter}</div>
+            <div style="position: absolute; bottom: -1px; right: -1px; width: 8px; height: 8px; background-color: {glow_color}; border-radius: 50%; border: 2px solid #0e1117; box-shadow: 0 0 8px {glow_color}; z-index: 3;"></div>
         </div>
-        <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
-            <span style="font-size: 0.9rem; color: #f1f5f9; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{user_name}</span>
-            <span style="display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.75px; width: fit-content; {plan_badge_style}">{user_plan}</span>
+        <div class="profile-hover-panel">
+            <div style="display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px;">
+                <span style="font-size: 0.9rem; color: #f1f5f9; font-weight: 700; white-space: nowrap;">{user_name}</span>
+                <span style="display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.75px; width: fit-content; {plan_badge_style}">{user_plan}</span>
+            </div>
+            {action_html}
+            <a href="?trigger_logout=1" target="_self" style="text-decoration: none !important;">
+                <div style="margin-top: 8px; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); color: #f1f5f9; font-size: 0.75rem; text-align: center; cursor: pointer;">Logout</div>
+            </a>
         </div>
     </div>
-    <div style="margin-bottom: 10px;">{action_html}</div>
     """
-    st.sidebar.html(profile_menu_html)
 #checkout page
 def render_upgrade_page(config, current_username, save_config):
     """Renders the sidebar's configuration panel."""
@@ -95,19 +123,17 @@ def render_upgrade_page(config, current_username, save_config):
             st.success("✓ Payment confirmed — your account has been upgraded to Premium!")
             st.rerun()
 #sidebar configuration
-def render_configuration_panel(user_data, config, current_username, save_config):
+def render_configuration_panel(user_data, config, current_username, save_config, user_plan, upgrade_requested, user_name):
     """Renders the sidebar's configuration panel."""
-    #title
-    header_html = """
+    #title with the profile avatar
+    avatar_html = _build_avatar_html(user_plan, upgrade_requested, user_name)
+    header_html = f"""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; margin-top: 0px;">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 26px; height: 26px; min-width: 26px; display: block;">
-            <defs><linearGradient id="header_grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#00f2fe;stop-opacity:1" /><stop offset="100%" style="stop-color:#4facfe;stop-opacity:1" /></linearGradient></defs>
-            <rect width="100" height="100" rx="25" fill="#1c1f26"/><path d="M20,50 L40,50 L55,25 L70,75 L85,50" fill="none" stroke="url(#header_grad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="50" r="6" fill="#00f2fe"/><circle cx="85" cy="50" r="6" fill="#4facfe"/>
-        </svg>
+        {avatar_html}
         <span style="font-size: 1.05rem; font-weight: 700; color: #f1f5f9; font-family: 'Segoe UI', -apple-system, sans-serif; letter-spacing: -0.2px; white-space: nowrap; line-height: 1;">Configuration Panel</span>
     </div>
     """
-    st.sidebar.markdown(header_html, unsafe_allow_html=True)
+    st.sidebar.html(header_html)
     option = st.sidebar.radio("Select operation mode:", ("BUY", "SELL"), key="operation_mode")
     #ticker box
     def _submit_ticker():
@@ -138,7 +164,6 @@ def render_configuration_panel(user_data, config, current_username, save_config)
     #keeps the last change
     if target_company != st.session_state.active_ticker:
         st.session_state.analysis_done = False
-
     #watchlist controls
     watchlist = config['credentials']['usernames'][current_username].get('watchlist', [])
     if target_company in watchlist:
@@ -153,7 +178,6 @@ def render_configuration_panel(user_data, config, current_username, save_config)
         st.session_state.watchlist_mode = True
         st.rerun()
     st.sidebar.write("---")
-
     run_analysis = st.sidebar.button("▶ Run analysis", use_container_width=True)
     if st.session_state.get("trigger_run"):
         run_analysis = True

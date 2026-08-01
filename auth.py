@@ -15,7 +15,6 @@ def load_config():
             'cookie': {'expiry_days': 30, 'key': 'signature_key', 'name': 'auth_cookie'}
         }
         save_config(config)
-
     for username, user_data in config['credentials']['usernames'].items():
         if 'plan' not in user_data:
             user_data['plan'] = 'Free'
@@ -27,15 +26,10 @@ def load_config():
             user_data['watchlist'] = []
         if 'analysis_history' not in user_data:
             user_data['analysis_history'] = []
-
     return config
-
-
 def save_config(config):
     with open(CONFIG_PATH, 'w') as file:
         yaml.dump(config, file)
-
-
 def get_authenticator(config):
     return stauth.Authenticate(
         config['credentials'],
@@ -43,8 +37,6 @@ def get_authenticator(config):
         config['cookie']['key'],
         config['cookie']['expiry_days'],
     )
-
-
 def reset_daily_usage_if_needed(config, username):
     """Resets the daily analysis counter if it's a new day. Returns the usage dict."""
     user_data = config['credentials']['usernames'][username]
@@ -56,8 +48,6 @@ def reset_daily_usage_if_needed(config, username):
         config['credentials']['usernames'][username]['usage'] = user_usage
         save_config(config)
     return user_usage
-
-
 def render_login_page(authenticator, config):
     """Renders the logged-out welcome screen with Login/Register tabs."""
     title_welcome_html = """
@@ -94,9 +84,7 @@ def render_login_page(authenticator, config):
     </div>
     """
     st.markdown(intro_html, unsafe_allow_html=True)
-
     st.write("### Create your free account to see it in action:")
-
     tab_login, tab_register = st.tabs(["Login", "Register"])
     with tab_login:
         authenticator.login()

@@ -58,18 +58,22 @@ elif st.session_state["authentication_status"]:
     user_usage = auth.reset_daily_usage_if_needed(config, current_username)
     results.restore_last_analysis(user_data)
     user_name = st.session_state.get('name', 'User')
-    sidebar.render_profile_card(user_plan, upgrade_requested, user_name)
     if st.query_params.get("trigger_upgrade") == "1":
         st.query_params.clear()
         st.session_state.checkout_mode = True
+        st.rerun()
+    if st.query_params.get("trigger_logout") == "1":
+        st.query_params.clear()
+        st.session_state["authentication_status"] = None
+        st.session_state.pop("username", None)
+        st.session_state.pop("name", None)
         st.rerun()
     if st.session_state.checkout_mode or st.session_state.watchlist_mode:
         if st.sidebar.button("← Back to Analysis", use_container_width=True):
             st.session_state.checkout_mode = False
             st.session_state.watchlist_mode = False
             st.rerun()
-    authenticator.logout('Logout', 'sidebar')
-    st.sidebar.write("---")
+        st.sidebar.write("---")
     if st.session_state.checkout_mode and user_plan == "Free":
         sidebar.render_upgrade_page(config, current_username, auth.save_config)
     elif st.session_state.watchlist_mode:
@@ -90,7 +94,7 @@ elif st.session_state["authentication_status"]:
             st.warning(f"ℹ️ You are on the **Free** plan. You have **{limit_left} out of 3 daily analyses** left.")
         st.write("---")
         option, target_company, confidence_threshold, run_analysis = sidebar.render_configuration_panel(
-            user_data, config, current_username, auth.save_config
+            user_data, config, current_username, auth.save_config, user_plan, upgrade_requested, user_name
         )
         if run_analysis:
             if user_plan == "Free":
