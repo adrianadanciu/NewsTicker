@@ -80,9 +80,11 @@ def fetch_google_news(ticker):
     for target_url in urls:
         try:
             response = requests.get(target_url, headers=REQUEST_HEADERS, timeout=10)
+            print(f"[DEBUG] URL: {target_url[:100]}... | status={response.status_code} | body_len={len(response.text)}")
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'xml')
                 items = soup.find_all('item')
+                print(f"[DEBUG] Parsed {len(items)} <item> elements from this response.")
                 for item in items:
                     if len(headlines) >= 75:
                         break
