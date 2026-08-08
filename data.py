@@ -32,6 +32,13 @@ MARKETS_DATABASE = {
     "IL": {"hl": "he", "gl": "IL", "ceid": "IL:he", "term": "מניות בורסה"}, 
     "SA": {"hl": "ar", "gl": "SA", "ceid": "SA:ar", "term": "أسهم تداول"},
 }
+#Google News blocheaza/raspunde diferit cererilor fara un User-Agent de browser
+#real -- fara asta, cererile facute din adrese IP de tip cloud/server (cum e
+#Streamlit Cloud) pot fi respinse sau golite silentios, in timp ce local, de
+#pe conexiunea obisnuita de acasa, functioneaza fara probleme.
+REQUEST_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
 def fetch_google_news(ticker):
     """First source of news and headlines from which the app takes its data throughout Google News"""
     headlines = []
@@ -72,7 +79,7 @@ def fetch_google_news(ticker):
         ]
     for target_url in urls:
         try:
-            response = requests.get(target_url, timeout=10)
+            response = requests.get(target_url, headers=REQUEST_HEADERS, timeout=10)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'xml')
                 items = soup.find_all('item')
@@ -117,7 +124,7 @@ def fetch_reddit_wsb(ticker):
     search_query = f'site:reddit.com/r/wallstreetbets "{ticker}"'
     url = f"https://news.google.com/rss/search?q={search_query}&hl=en-US&gl=US&ceid=US:en"
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, headers=REQUEST_HEADERS, timeout=10)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'xml')
             items = soup.find_all('item')
