@@ -1,2 +1,10 @@
-psaw
+streamlit
+streamlit-authenticator
 psycopg2-binary
+requests
+beautifulsoup4
+pandas
+yfinance
+plotly
+torch
+transformers

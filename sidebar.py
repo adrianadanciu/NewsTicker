@@ -1,4 +1,5 @@
 import streamlit as st
+import payments
 #lets the user type a company name instead of the exact ticker
 COMPANY_NAME_TO_TICKER = {
     "nvidia": "NVDA", "apple": "AAPL", "microsoft": "MSFT", "google": "GOOGL",
@@ -24,7 +25,6 @@ def resolve_ticker(user_input: str) -> str:
     return COMPANY_NAME_TO_TICKER.get(key, user_input)
 #builds the avatar and the hover panel as an HTML snippet
 def _build_avatar_html(user_plan, upgrade_requested, user_name):
-    #NOTE: this is a MOCK checkout. No real payment processing happens here. Submitting the "proof of payment" form below upgrades the account to Premium immediately, with no verification. Swap in a real payment provider (Stripe, etc.) before using this in production.
     first_letter = user_name[0].upper() if user_name else "U"
     if user_plan == "Premium":
         glow_color = "#f39c12"
@@ -50,7 +50,22 @@ def _build_avatar_html(user_plan, upgrade_requested, user_name):
 
     return f"""
     <style>
-        .profile-hover-wrap {{ position: relative; display: inline-block; height: 32px; max-height: 32px; overflow: visible; flex-shrink: 0; }}
+        .profile-hover-wrap {{
+            position: relative;
+            display: inline-block;
+            height: 32px;
+            max-height: 32px;
+            overflow: visible;
+            flex-shrink: 0;
+            /* Extinde invizibil zona "hoverabila" spre dreapta, ca sa acopere
+               golul dintre avatar (32px latime) si panou (care incepe la
+               left: 40px). Fara asta, mouse-ul iese din elementul cu :hover
+               chiar in acel gol de 8px, iar panoul dispare inainte sa apuci
+               sa dai click pe Logout. Margin-ul negativ anuleaza latimea
+               suplimentara, ca sa nu impinga restul continutului din sidebar. */
+            padding-right: 28px;
+            margin-right: -28px;
+        }}
         .profile-hover-panel {{
             position: absolute;
             top: -6px;
@@ -65,6 +80,7 @@ def _build_avatar_html(user_plan, upgrade_requested, user_name):
             visibility: hidden;
             transform: translateX(-6px);
             transition: opacity 0.15s ease, transform 0.15s ease;
+            transition-delay: 0s;
             z-index: 99999;
         }}
         .profile-hover-wrap:hover .profile-hover-panel {{
@@ -106,22 +122,12 @@ def render_upgrade_page(config, current_username, save_config):
         * **Entry/exit optimization:** Receive exact optimal entry limits, stop-loss triggers and asset management rules.
         * **Extended premium data:** Access to additional market signals and community sentiment sources.
         
-        ### Price: **$19.99 / month**
+        ### Price: **$19.99 / 30 days**
         """)
     with col_pay2:
         st.subheader("Payment Method")
-        st.info("Payments are processed securely. We currently accept direct transfer or rapid links.")
-        st.markdown("[↗ Step 1: Click here to pay via Stripe / Revolut](https://stripe.com)")
-        st.write("---")
-        st.write("### Step 2: Confirm Payment")
-        st.text_input("Name / Transaction ID:")
-        if st.button("✓ Submit proof of payment for activation"):
-            config['credentials']['usernames'][current_username]['plan'] = 'Premium'
-            config['credentials']['usernames'][current_username]['upgrade_requested'] = False
-            save_config(config)
-            st.session_state.checkout_mode = False
-            st.success("✓ Payment confirmed — your account has been upgraded to Premium!")
-            st.rerun()
+        st.info("Payments are processed securely through PayPal. You'll be redirected back here automatically once the payment completes.")
+        payments.render_paypal_button()
 #sidebar configuration
 def render_configuration_panel(user_data, config, current_username, save_config, user_plan, upgrade_requested, user_name):
     """Renders the sidebar's configuration panel."""

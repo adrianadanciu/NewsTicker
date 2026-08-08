@@ -1,9 +1,14 @@
 #this file contains all the visual theme of the app
 import streamlit as st
+import streamlit.components.v1 as components
 
 def inject_custom_ui():
     custom_css = """
     <style>
+        /*changed the aspect in case of incognito mode*/
+        html, body, :root {
+            color-scheme: dark !important;
+        }
         /*hides default clutter*/
         #MainMenu, footer, .stDeployButton,
         [data-testid="stAppDeployButton"],
@@ -53,10 +58,14 @@ def inject_custom_ui():
         }
         div[data-testid="stMetricValue"] {
             font-size: 2.1rem !important;
+            color: #ffffff !important;
         }
         div[data-testid="stMetricLabel"] {
             font-size: 1rem !important;
             margin-bottom: 6px !important;
+        }
+        div[data-testid="stMetricLabel"], div[data-testid="stMetricLabel"] * {
+            color: #ffffff !important;
         }
         /*big cards aspect*/
         .premium-card {
@@ -70,10 +79,80 @@ def inject_custom_ui():
             background: linear-gradient(135deg, #1e3a6e, #13294b) !important;
             border: 2px solid #00f2fe !important;
             border-radius: 12px !important;
+            color: #ffffff !important;
+        }
+        div.stButton button, div.stButton button * {
+            color: #ffffff !important;
         }
         div.stButton button:hover {
             background: linear-gradient(135deg, #00f2fe, #64c8ff) !important;
+        }
+        div.stButton button:hover, div.stButton button:hover * {
             color: #0a1f3d !important;
+        }
+        div[data-testid="stSidebar"] [data-testid="stWidgetLabel"],
+        div[data-testid="stSidebar"] [data-testid="stWidgetLabel"] *,
+        div[data-testid="stSidebar"] div[role="radiogroup"],
+        div[data-testid="stSidebar"] div[role="radiogroup"] *,
+        div[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"],
+        div[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] *,
+        div[data-testid="stSidebar"] div[data-testid="stRadio"],
+        div[data-testid="stSidebar"] div[data-testid="stRadio"] label,
+        div[data-testid="stSidebar"] div[data-testid="stRadio"] label *,
+        div[data-testid="stSidebar"] div[data-testid="stSlider"] *,
+        div[data-testid="stSidebar"] div[data-testid="stTickBar"] * {
+            color: #ffffff !important;
+        }
+        div[data-baseweb="input"], div[data-baseweb="textarea"] {
+            background-color: rgba(10, 31, 61, 0.85) !important;
+            border: 1.5px solid #2c4a7c !important;
+            border-radius: 8px !important;
+        }
+        div[data-baseweb="input"]:focus-within, div[data-baseweb="textarea"]:focus-within {
+            border-color: #00f2fe !important;
+            box-shadow: 0 0 12px rgba(0, 242, 254, 0.3) !important;
+        }
+        div[data-baseweb="input"] input,
+        div[data-baseweb="textarea"] textarea {
+            color: #f1f5f9 !important;
+            background-color: transparent !important;
+        }
+        div[data-baseweb="input"] input::placeholder,
+        div[data-baseweb="textarea"] textarea::placeholder {
+            color: #64748b !important;
+        }
+        h3, h4, h5, h6 {
+            color: #ffffff !important;
+        }
+        /* h1 nativ Streamlit (ex: st.title("Unlock Premium Plan")) -- sigur,
+           nu afecteaza "NewsTicker" (are deja alb setat inline, aceeasi valoare). */
+        h1 {
+            color: #ffffff !important;
+        }
+        /* elementele din liste cu buline (ex: "* Full global access...") --
+           nicio regula anterioara nu le acoperea. */
+        li {
+            color: #ffffff !important;
+        }
+        [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] * {
+            color: #ffffff !important;
+        }
+        [data-baseweb="tab-list"] button p {
+            color: #94a3b8 !important;
+        }
+        [data-baseweb="tab-list"] button[aria-selected="true"] p {
+            color: #ffffff !important;
+        }
+        [data-testid="stTooltipIcon"] svg,
+        [data-testid="stTooltipIcon"] svg * {
+            fill: none !important;
+            stroke: #cbd5e1 !important;
+            opacity: 1 !important;
+        }
+        .stApp, .stApp * {
+            opacity: 1 !important;
+            transition: none !important;
+            filter: none !important;
         }
         /*main page organizing*/
         .block-container {
@@ -183,3 +262,46 @@ def inject_custom_ui():
     </script>
     """
     st.html(custom_css)
+    force_color_js = """
+    <script>
+    (function () {
+        var doc = window.parent.document;
+        var whiteTextSelectors = [
+            '[data-testid="stSidebar"] [data-testid="stWidgetLabel"]',
+            '[data-testid="stSidebar"] [data-testid="stWidgetLabel"] *',
+            '[data-testid="stSidebar"] div[role="radiogroup"]',
+            '[data-testid="stSidebar"] div[role="radiogroup"] *',
+            '[data-testid="stSidebar"] [data-testid="stMarkdownContainer"]',
+            '[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] *',
+            '[data-testid="stMetricLabel"]',
+            '[data-testid="stMetricLabel"] *',
+            '[data-testid="stTickBar"]',
+            '[data-testid="stTickBar"] *',
+        ];
+        function forceWhiteText() {
+            whiteTextSelectors.forEach(function (sel) {
+                doc.querySelectorAll(sel).forEach(function (el) {
+                    // <code> (ex: eticheta "SAP.DE") are propriul fundal deschis --
+                    // daca ii fortam textul alb, devine invizibil. Il sarim.
+                    if (el.tagName === 'CODE' || el.closest('code')) {
+                        return;
+                    }
+                    el.style.setProperty('color', '#ffffff', 'important');
+                });
+            });
+            doc.querySelectorAll('[data-testid="stTooltipIcon"] svg, [data-testid="stTooltipIcon"] svg *').forEach(function (el) {
+                el.style.setProperty('fill', 'none', 'important');
+                el.style.setProperty('stroke', '#cbd5e1', 'important');
+                el.style.setProperty('opacity', '1', 'important');
+            });
+        }
+        forceWhiteText();
+        if (!doc.__forceWhiteTextObserverBound) {
+            doc.__forceWhiteTextObserverBound = true;
+            var observer = new MutationObserver(forceWhiteText);
+            observer.observe(doc.body, { childList: true, subtree: true });
+        }
+    })();
+    </script>
+    """
+    components.html(force_color_js, height=0, width=0)
