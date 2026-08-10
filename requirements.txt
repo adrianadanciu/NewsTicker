@@ -1,5 +1,6 @@
 streamlit
 streamlit-authenticator
+certifi
 psycopg2-binary
 requests
 beautifulsoup4

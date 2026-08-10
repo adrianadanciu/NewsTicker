@@ -1,14 +1,12 @@
 import streamlit as st
-import torch #librabry for machine learning
+import torch #library for machine learning
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline #import instruments for ai usage
-
 @st.cache_resource(show_spinner=False) #gives the user the most recent seached news
 def load_local_finbert(): #download the ai
     model_name = "ProsusAI/finbert"
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=False)
     model = AutoModelForSequenceClassification.from_pretrained(model_name, local_files_only=False)
     return tokenizer, model
-
 def analyze_headlines(headlines):
     tokenizer, model = load_local_finbert()
     """Processes headlines using FinBERT to deduce stock movements from technical news. Returns aggregated counts plus the original headlines enriched with per-item sentiment."""
@@ -54,6 +52,7 @@ def analyze_headlines(headlines):
         final_sentiment = None
         if tech_sentiment_boost:
             final_sentiment = tech_sentiment_boost
+            confidence = 100.0
         else:
             if max_idx == 0:
                 final_sentiment = "POSITIVE"

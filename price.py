@@ -1,11 +1,10 @@
 import yfinance as yf #library used to download the live prices
 import ssl #the library responsible for security
-
+import certifi 
 try:
-    ssl._create_default_https_context = ssl._create_unverified_context #deactivates ssl verifications
+    ssl._create_default_https_context = lambda: ssl.create_default_context(cafile=certifi.where())
 except AttributeError:
     pass
-
 def get_live_price(ticker):
     """Fetches the latest available price."""
     try:

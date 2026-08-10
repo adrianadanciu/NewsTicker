@@ -70,9 +70,10 @@ def capture_paypal_order(order_id):
         st.session_state.paypal_debug = f"Exception: {repr(e)}"
         return False
 def render_paypal_button():
-    try:
-        approve_link = create_paypal_order()
-    except Exception as e:
-        st.error(f"We couldn't start the payment: {e}")
-        return
-    st.link_button("💳 Pay with PayPal — $19.99", approve_link, use_container_width=True)
+    if "paypal_approve_link" not in st.session_state:
+        try:
+            st.session_state.paypal_approve_link = create_paypal_order()
+        except Exception as e:
+            st.error(f"We couldn't start the payment: {e}")
+            return
+    st.link_button("💳 Pay with PayPal — $19.99", st.session_state.paypal_approve_link, use_container_width=True)

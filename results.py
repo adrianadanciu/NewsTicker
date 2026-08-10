@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
+import html
 from datetime import datetime
 import data
 import ai
@@ -327,9 +328,9 @@ def render_news_table(all_headlines):
         "NEUTRAL": ("●", "#8a90a6", "Neutral"),
     }
     for item in all_headlines:
-        source = item["source"]
-        text = item["text"].replace('"', '&quot;').replace("'", "&#39;")
-        link = item["link"]
+        source = html.escape(item["source"])
+        text = html.escape(item["text"])
+        link = html.escape(item["link"], quote=True)
         symbol, color, label = sentiment_display.get(item.get("sentiment"), ("●", "#8a90a6", "Unknown"))
         confidence = item.get("confidence")
         title_attr = f'{label} ({confidence:.0f}% confidence)' if confidence is not None else label

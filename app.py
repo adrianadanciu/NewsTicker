@@ -8,9 +8,6 @@ import results
 import payments
 import legal
 import faq
-#page configuration
-st.set_page_config(page_title="NewsTicker", layout="wide")
-theme.inject_custom_ui()
 #app logo
 svg_code = """
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
@@ -28,6 +25,7 @@ svg_code = """
 """
 b64_svg = base64.b64encode(svg_code.encode('utf-8')).decode('utf-8')
 custom_favicon = f"data:image/svg+xml;base64,{b64_svg}"
+#page configuration
 st.set_page_config(
     page_title="NewsTicker",
     page_icon=custom_favicon,
@@ -84,7 +82,6 @@ config = auth.load_config()
 authenticator = auth.get_authenticator(config)
 auth_status = st.session_state.get("authentication_status")
 if auth_status is True:
-    theme.inject_custom_ui()
     current_username = st.session_state["username"]
     user_data = config['credentials']['usernames'][current_username]
     user_plan = user_data.get('plan', 'Free')
@@ -109,6 +106,7 @@ if auth_status is True:
             auth.save_config(config)
             st.session_state.checkout_mode = False
             st.session_state.paypal_success = True
+            st.session_state.pop("paypal_approve_link", None)
         else:
             st.session_state.paypal_error = True
         st.rerun()
@@ -124,6 +122,7 @@ if auth_status is True:
         if st.sidebar.button("← Back to Analysis", use_container_width=True):
             st.session_state.checkout_mode = False
             st.session_state.watchlist_mode = False
+            st.session_state.pop("paypal_approve_link", None)
             st.rerun()
         st.sidebar.write("---")
     if st.session_state.checkout_mode and user_plan == "Free":
